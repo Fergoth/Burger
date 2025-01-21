@@ -5,6 +5,9 @@ from django.templatetags.static import static
 
 from .models import Product, Order, OrderItem
 
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+
 
 def banners_list_api(request):
     # FIXME move data to db?
@@ -58,9 +61,10 @@ def product_list_api(request):
     })
 
 
+@api_view(['POST'])
 def register_order(request):
     try:
-        order = json.loads(request.body.decode())
+        order = request.data
         firstname = order['firstname']
         lastname = order['lastname']
         phone_number = order['phonenumber']
@@ -70,7 +74,7 @@ def register_order(request):
         return JsonResponse({
             'error': 'Некорректный json',
         })
-    order = Order.objects.create(
+    created_order = Order.objects.create(
         firstname=firstname,
         lastname=lastname,
         phone_number=phone_number,
@@ -82,8 +86,8 @@ def register_order(request):
         product = Product.objects.get(id=product_id)
         OrderItem.objects.create(
             product=product,
-              order=order,
+              order=created_order,
               quantity=quantity
         )
 
-    return JsonResponse({'text':'заказ создан'})
+    return Response(order)
