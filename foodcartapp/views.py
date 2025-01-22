@@ -1,10 +1,10 @@
-import json
 from django.http import JsonResponse
 from django.templatetags.static import static
-
+from django.core.exceptions import ValidationError
 
 from .models import Product, Order, OrderItem
 
+from phonenumber_field.validators import validate_international_phonenumber
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -64,39 +64,83 @@ def product_list_api(request):
 
 @api_view(['POST'])
 def register_order(request):
+    errors = []
     order = request.data
-    try:
+    if 'products' not in order:
+        errors.append('products key not presented')
+    else:
         products = order['products']
         if not isinstance(products, list):
-            raise KeyError
-    except KeyError:
-        return Response(
-            {'error': "products key not presented or not a list"},
-            status=status.HTTP_405_METHOD_NOT_ALLOWED
-        )
-    if not products:
-        return Response(
-            {'error': "products are empty"},
-            status=status.HTTP_405_METHOD_NOT_ALLOWED
-        )
-    firstname = order['firstname']
-    lastname = order['lastname']
-    phone_number = order['phonenumber']
-    address = order['address']    
-    created_order = Order.objects.create(
+            errors.append('products are not a list')
+        elif not products:
+            errors.append('products are empty')
+
+    if 'firstname' not in order:
+        errors.append('firstname key not presented')
+    else:
+        firstname = order['firstname']
+        if not isinstance(firstname, str):
+            errors.append('firstname are not a string')
+        elif not firstname:
+            errors.append('firstname are empty')
+    
+    if 'lastname' not in order:
+        errors.append('lastname key not presented')
+    else:
+        lastname = order['lastname']
+        if not isinstance(lastname, str):
+            errors.append('lastname are not a string')
+        elif not lastname:
+            errors.append('lastname are empty')
+
+    if 'address' not in order:
+        errors.append('address key not presented')
+    else:
+        address = order['address']
+        if not isinstance(address, str):
+            errors.append('address are not a string')
+        elif not address:
+            errors.append('address are empty')
+
+    if 'phonenumber' not in order:
+        errors.append('phonenumber key not presented')
+    else:
+        phone_number = order['phonenumber']
+        if not phone_number:
+            errors.append('phonenumber is empty')
+        try:
+            validate_international_phonenumber(phone_number)
+        except ValidationError:
+            errors.append('invalid telephone number')
+     
+    created_order = Order(
         firstname=firstname,
         lastname=lastname,
         phone_number=phone_number,
         address=address 
         )
+    order_items = []
     for product_item in products:
         product_id = product_item['product']
         quantity = product_item['quantity']
-        product = Product.objects.get(id=product_id)
-        OrderItem.objects.create(
-            product=product,
-              order=created_order,
-              quantity=quantity
-        )
+        try:
+            product = Product.objects.get(id=product_id)
+            order_items.append(OrderItem(
+                product=product,
+                order=created_order,
+                quantity=quantity
+            ))
+        except Product.DoesNotExist:
+            errors.append(f'invalid product id {product_id}')
+
+        
+    if errors:
+        return Response(
+            {'errors': errors},
+            status=status.HTTP_405_METHOD_NOT_ALLOWED
+        ) 
+    else:
+        created_order.save()
+        OrderItem.objects.bulk_create(order_items)
 
     return Response(order)
