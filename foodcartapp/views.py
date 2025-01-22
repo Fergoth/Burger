@@ -111,4 +111,4 @@ def register_order(request):
     serializer = OrderSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     order = serializer.save()
-    return Response(OrderSerializer(order).data)
+    return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)
