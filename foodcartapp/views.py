@@ -5,6 +5,7 @@ from django.templatetags.static import static
 
 from .models import Product, Order, OrderItem
 
+from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
@@ -63,17 +64,25 @@ def product_list_api(request):
 
 @api_view(['POST'])
 def register_order(request):
+    order = request.data
     try:
-        order = request.data
-        firstname = order['firstname']
-        lastname = order['lastname']
-        phone_number = order['phonenumber']
-        address = order['address']
         products = order['products']
-    except ValueError:
-        return JsonResponse({
-            'error': 'Некорректный json',
-        })
+        if not isinstance(products, list):
+            raise KeyError
+    except KeyError:
+        return Response(
+            {'error': "products key not presented or not a list"},
+            status=status.HTTP_405_METHOD_NOT_ALLOWED
+        )
+    if not products:
+        return Response(
+            {'error': "products are empty"},
+            status=status.HTTP_405_METHOD_NOT_ALLOWED
+        )
+    firstname = order['firstname']
+    lastname = order['lastname']
+    phone_number = order['phonenumber']
+    address = order['address']    
     created_order = Order.objects.create(
         firstname=firstname,
         lastname=lastname,
