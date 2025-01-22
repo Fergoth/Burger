@@ -11,40 +11,44 @@ from rest_framework.response import Response
 from rest_framework.serializers import ListField, ModelSerializer, IntegerField,ValidationError
 
 class OrderItemSerializer(ModelSerializer):
-    product = IntegerField(source='id')
+    product = IntegerField(source='product.id')
     class Meta:
         model = OrderItem
-        fields = ['product','quantity']
+        fields = ['id','product','quantity']
+        read_only_fields = ['id']
 
     def validate_product(self,value):
         try:
             Product.objects.get(id=value)
         except Product.DoesNotExist:
             raise ValidationError(f'invalid product id {value}')
+        print(value)
         return value 
 
 class OrderSerializer(ModelSerializer):
-    products = ListField(
-        child=OrderItemSerializer(),
-        allow_empty=False
+    products = OrderItemSerializer(
+        many=True,
+        allow_empty=False,
+        source='items'     
     )
     class Meta:
         model = Order
-        fields = ['products','firstname', 'lastname', 'address', 'phonenumber']
+        fields = ['id','products','firstname', 'lastname', 'address', 'phonenumber']
+        read_only_fields = ['id']
     
     def create(self, validated_data):
-        products = validated_data.pop('products')
+        products = validated_data.pop('items')
         order_items = []
         order = Order.objects.create(**validated_data)
         for order_item in products:
-            product = Product.objects.get(id=order_item['id'])
+            product = Product.objects.get(id=order_item['product']['id'])
             order_items.append(OrderItem(
                 product=product,
                 order=order,
                 quantity=order_item['quantity']
             ))
         OrderItem.objects.bulk_create(order_items)
-        return order.id
+        return order
             
 
 
@@ -106,5 +110,5 @@ def product_list_api(request):
 def register_order(request):
     serializer = OrderSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
-    order_id=serializer.save()
-    return Response({'id':order_id})
+    order = serializer.save()
+    return Response(OrderSerializer(order).data)
