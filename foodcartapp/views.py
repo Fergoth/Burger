@@ -4,11 +4,10 @@ from django.core.exceptions import ValidationError
 
 from .models import Product, Order, OrderItem
 
-from phonenumber_field.validators import validate_international_phonenumber
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from rest_framework.serializers import ListField, ModelSerializer, IntegerField,ValidationError
+from rest_framework.serializers import ModelSerializer, IntegerField, ValidationError
 
 class OrderItemSerializer(ModelSerializer):
     product = IntegerField(source='product.id')
