@@ -1,5 +1,7 @@
 from django.db import models
 from django.core.validators import MinValueValidator
+from django.db.models import Sum, F
+from django.db.models import Prefetch
 
 from phonenumber_field.modelfields import PhoneNumberField
 
@@ -123,6 +125,14 @@ class RestaurantMenuItem(models.Model):
     def __str__(self):
         return f"{self.restaurant.name} - {self.product.name}"
 
+
+class OrderQuerySet(models.QuerySet):
+    def annotate_with_total_cost(self):
+        order_items = OrderItem.objects.all().select_related('product')
+        orders = self.prefetch_related(Prefetch('items',queryset=order_items)).all()
+        return orders.annotate(total_cost=Sum(F('items__quantity')*F('items__product__price')))
+
+
 class Order(models.Model):
     firstname = models.CharField(
         'имя',
@@ -140,6 +150,8 @@ class Order(models.Model):
         'адрес',
         max_length=100,
     )
+
+    objects = OrderQuerySet.as_manager()
 
     class Meta:
         verbose_name = 'заказ'
