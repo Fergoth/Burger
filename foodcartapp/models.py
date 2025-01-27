@@ -128,9 +128,8 @@ class RestaurantMenuItem(models.Model):
 
 class OrderQuerySet(models.QuerySet):
     def annotate_with_total_cost(self):
-        order_items = OrderItem.objects.all().select_related('product')
-        orders = self.prefetch_related(Prefetch('items',queryset=order_items)).all()
-        return orders.annotate(total_cost=Sum(F('items__quantity')*F('items__product__price')))
+        orders = self.prefetch_related('items').all()
+        return orders.annotate(total_cost=Sum(F('items__quantity')*F('items__price')))
 
 
 class Order(models.Model):
@@ -175,6 +174,12 @@ class OrderItem(models.Model):
     )
     quantity = models.PositiveIntegerField(
         'количество',
+        validators=[MinValueValidator(0)]
+    )
+    price = models.DecimalField(
+        'цена позиции',
+        max_digits=8,
+        decimal_places=2,
         validators=[MinValueValidator(0)]
     )
 

@@ -1,6 +1,7 @@
 from django.http import JsonResponse
 from django.templatetags.static import static
 from django.core.exceptions import ValidationError
+from django.db import transaction
 
 from .models import Product, Order, OrderItem
 
@@ -36,15 +37,16 @@ class OrderSerializer(ModelSerializer):
         read_only_fields = ['id']
     
     def create(self, validated_data):
-        products = validated_data.pop('items')
+        product_items = validated_data.pop('items')
         order_items = []
         order = Order.objects.create(**validated_data)
-        for order_item in products:
+        for order_item in product_items:
             product = Product.objects.get(id=order_item['product']['id'])
             order_items.append(OrderItem(
                 product=product,
                 order=order,
-                quantity=order_item['quantity']
+                quantity=order_item['quantity'],
+                price=product.price
             ))
         OrderItem.objects.bulk_create(order_items)
         return order
@@ -109,5 +111,6 @@ def product_list_api(request):
 def register_order(request):
     serializer = OrderSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
-    order = serializer.save()
+    with transaction.atomic():
+        order = serializer.save()
     return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)
