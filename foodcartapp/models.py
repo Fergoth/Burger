@@ -140,6 +140,10 @@ class Order(models.Model):
         DELIVERING = 'DE', _('Доставляется')
         DONE = 'DO', _('Завершен')
 
+    class PaymentMethod(models.TextChoices):
+        CASH = 'CASH', _('Наличные')
+        ELECTRONIC = 'ELEC', _('Электронно')
+
     firstname = models.CharField(
         'имя',
         max_length=30,
@@ -184,6 +188,12 @@ class Order(models.Model):
         'время доставки закза',
         null=True,
         blank=True,
+        db_index=True
+    )
+    payment_method = models.CharField(
+        'способ оплаты',
+        max_length=4,
+        choices=PaymentMethod.choices,
         db_index=True
     )
 
