@@ -128,6 +128,18 @@ class OrderAdmin(admin.ModelAdmin):
             return HttpResponseRedirect(reverse('restaurateur:view_orders'))
         else:
             return res
+        
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "restaurant":
+            restaurant_menu_items = RestaurantMenuItem.objects.select_related('restaurant').filter(availability=True).values('restaurant_id','restaurant__name','product_id')
+            order_id = request.resolver_match.kwargs['object_id']
+            order = Order.objects.prefetch_related('items').get(pk=order_id)
+            restaurants_for_current_order = set(item['restaurant_id'] for item in restaurant_menu_items)
+            for order_item in order.items.all():
+                restauraunts_with_product = set(item['restaurant_id'] for item in restaurant_menu_items if item['product_id'] == order_item.product_id)
+                restaurants_for_current_order&=restauraunts_with_product
+            kwargs["queryset"] = Restaurant.objects.filter(id__in=restaurants_for_current_order)
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
 class OrderItemInline(admin.TabularInline):
