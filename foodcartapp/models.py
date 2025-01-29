@@ -162,6 +162,11 @@ class Order(models.Model):
         default=Status.CREATED,
         db_index=True
     )
+    comment = models.TextField(
+        'коментарий',
+        max_length=200,
+        blank=True,
+    )
 
     objects = OrderQuerySet.as_manager()
 
