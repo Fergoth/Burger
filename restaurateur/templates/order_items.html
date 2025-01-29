@@ -33,6 +33,13 @@
         <td>{{order.firstname}} {{order.lastname}}</td>
         <td>{{order.phonenumber}}</td>
         <td>{{order.address}}</td>
+        <td>{% if order.restaurants %}
+             Может быть приготовлен ресторанами:
+            {{order.restaurants}}
+          {% else %}
+            Готовит:
+            {{order.restaurant.name}}
+            {% endif %}</td>
         <td>{{order.comment}}</td>
         <td><a href="{% url "admin:foodcartapp_order_change" object_id=order.id %}?next={{ request.get_full_path|urlencode }}">Редактировать</a>
       </tr>

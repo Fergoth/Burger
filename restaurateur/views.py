@@ -8,7 +8,7 @@ from django.contrib.auth import authenticate, login
 from django.contrib.auth import views as auth_views
 
 
-from foodcartapp.models import Product, Restaurant, Order
+from foodcartapp.models import Product, Restaurant, Order, RestaurantMenuItem
 
 
 class Login(forms.Form):
@@ -90,9 +90,23 @@ def view_restaurants(request):
     })
 
 
+def add_restoraunts_to_orders(orders):
+    restaurant_menu_items = RestaurantMenuItem.objects.select_related('restaurant').filter(availability=True).values('restaurant_id','restaurant__name','product_id')
+    for order in orders:
+        if order.restaurant:
+            break
+        restaurants_for_current_order = set(item['restaurant__name'] for item in restaurant_menu_items)
+        for order_item in order.items.all():
+            restauraunts_with_product = set(item['restaurant__name'] for item in restaurant_menu_items if item['product_id'] == order_item.product_id)
+            restaurants_for_current_order&=restauraunts_with_product
+        order.restaurants = restaurants_for_current_order
+    return orders
+
 @user_passes_test(is_manager, login_url='restaurateur:login')
 def view_orders(request):
     orders = Order.objects.exclude(status=Order.Status.DONE).annotate_with_total_cost()
+    orders = add_restoraunts_to_orders(orders)
+    #TODO details in template
     return render(request, template_name='order_items.html', context={
         'orders':orders
     })

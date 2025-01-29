@@ -1,12 +1,14 @@
 from django.db import models
 from django.core.validators import MinValueValidator
-from django.db.models import Sum, F
+from django.db.models import Sum, F, Count
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 
 from phonenumber_field.modelfields import PhoneNumberField
+    
 
 class Restaurant(models.Model):
+
     name = models.CharField(
         'название',
         max_length=50
@@ -132,18 +134,25 @@ class OrderQuerySet(models.QuerySet):
         orders = self.prefetch_related('items').all()
         return orders.annotate(total_cost=Sum(F('items__quantity')*F('items__price')))
 
-
 class Order(models.Model):
-    class Status(models.TextChoices):
-        CREATED = 'CR', _('Создан')
-        ASSEMBLING = 'AS', _('Собирается')
-        DELIVERING = 'DE', _('Доставляется')
-        DONE = 'DO', _('Завершен')
+    class Status(models.IntegerChoices):
+        CREATED = 1, _('Создан')
+        ASSEMBLING = 2, _('Собирается')
+        DELIVERING = 3, _('Доставляется')
+        DONE = 4, _('Завершен')
 
     class PaymentMethod(models.TextChoices):
         CASH = 'CASH', _('Наличные')
         ELECTRONIC = 'ELEC', _('Электронно')
 
+    restaurant = models.ForeignKey(
+        Restaurant,
+        on_delete=models.CASCADE,
+        related_name='orders',
+        verbose_name='ресторан',
+        null=True,
+        blank=True
+    )
     firstname = models.CharField(
         'имя',
         max_length=30,
@@ -160,9 +169,8 @@ class Order(models.Model):
         'адрес',
         max_length=100,
     )
-    status = models.CharField(
+    status = models.IntegerField(
         'статус',
-        max_length=2,
         choices=Status.choices,
         default=Status.CREATED,
         db_index=True
