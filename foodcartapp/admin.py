@@ -120,6 +120,7 @@ class ProductAdmin(admin.ModelAdmin):
 class OrderAdmin(admin.ModelAdmin):
     inlines = [OrderItemInline]
 
+    readonly_fields = ('created_at',)
     def response_post_save_change(self, request, obj):
         res =  super().response_post_save_change(request, obj)
         if 'next' in request.GET and \
