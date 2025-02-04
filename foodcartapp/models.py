@@ -1,6 +1,6 @@
 from django.db import models
 from django.core.validators import MinValueValidator
-from django.db.models import Sum, F, Count
+from django.db.models import Sum, F
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 
