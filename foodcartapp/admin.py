@@ -100,14 +100,20 @@ class ProductAdmin(admin.ModelAdmin):
     def get_image_preview(self, obj):
         if not obj.image:
             return 'выберите картинку'
-        return format_html('<img src="{url}" style="max-height: 200px;"/>', url=obj.image.url)
+        return format_html(
+            '<img src="{url}" style="max-height: 200px;"/>',
+            url=obj.image.url
+            )
     get_image_preview.short_description = 'превью'
 
     def get_image_list_preview(self, obj):
         if not obj.image or not obj.id:
             return 'нет картинки'
         edit_url = reverse('admin:foodcartapp_product_change', args=(obj.id,))
-        return format_html('<a href="{edit_url}"><img src="{src}" style="max-height: 50px;"/></a>', edit_url=edit_url, src=obj.image.url)
+        return format_html(
+            '<a href="{edit_url}"><img src="{src}" style="max-height: 50px;"/></a>',
+            edit_url=edit_url, src=obj.image.url
+            )
     get_image_list_preview.short_description = 'превью'
 
 
@@ -121,28 +127,41 @@ class OrderAdmin(admin.ModelAdmin):
     inlines = [OrderItemInline]
 
     readonly_fields = ('created_at',)
+
     def response_post_save_change(self, request, obj):
-        res =  super().response_post_save_change(request, obj)
+        res = super().response_post_save_change(request, obj)
         if 'next' in request.GET and \
-            url_has_allowed_host_and_scheme(request.GET['next'],settings.ALLOWED_HOSTS,):
+            url_has_allowed_host_and_scheme(
+                request.GET['next'],
+                settings.ALLOWED_HOSTS,):
             return HttpResponseRedirect(reverse('restaurateur:view_orders'))
         else:
             return res
-        
+
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "restaurant":
-            restaurant_menu_items = RestaurantMenuItem.objects.select_related('restaurant').filter(availability=True).values('restaurant_id','restaurant__name','product_id')
+            restaurant_menu_items = RestaurantMenuItem.objects.\
+                select_related('restaurant').\
+                filter(availability=True).\
+                values('restaurant_id', 'restaurant__name', 'product_id')
             order_id = request.resolver_match.kwargs['object_id']
             order = Order.objects.prefetch_related('items').get(pk=order_id)
-            restaurants_for_current_order = set(item['restaurant_id'] for item in restaurant_menu_items)
+            restaurants_for_current_order = set(
+                item['restaurant_id']
+                for item in restaurant_menu_items
+                )
             for order_item in order.items.all():
-                restauraunts_with_product = set(item['restaurant_id'] for item in restaurant_menu_items if item['product_id'] == order_item.product_id)
-                restaurants_for_current_order&=restauraunts_with_product
-            kwargs["queryset"] = Restaurant.objects.filter(id__in=restaurants_for_current_order)
+                restauraunts_with_product = set(
+                    item['restaurant_id']
+                    for item in restaurant_menu_items
+                    if item['product_id'] == order_item.product_id
+                    )
+                restaurants_for_current_order &= restauraunts_with_product
+            kwargs["queryset"] = Restaurant.objects.\
+                filter(id__in=restaurants_for_current_order)
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
 class OrderItemInline(admin.TabularInline):
     model = OrderItem
     extra = 0
-

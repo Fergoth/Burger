@@ -8,34 +8,45 @@ from .models import Product, Order, OrderItem
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from rest_framework.serializers import ModelSerializer, IntegerField, ValidationError
+from rest_framework.serializers import ModelSerializer, IntegerField
+
 
 class OrderItemSerializer(ModelSerializer):
     product = IntegerField(source='product.id')
+
     class Meta:
         model = OrderItem
-        fields = ['id','product','quantity']
+        fields = ['id', 'product', 'quantity']
         read_only_fields = ['id']
 
-    def validate_product(self,value):
+    def validate_product(self, value):
         try:
             Product.objects.get(id=value)
         except Product.DoesNotExist:
             raise ValidationError(f'invalid product id {value}')
         print(value)
-        return value 
+        return value
+
 
 class OrderSerializer(ModelSerializer):
     products = OrderItemSerializer(
         many=True,
         allow_empty=False,
-        source='items'     
+        source='items'
     )
+
     class Meta:
         model = Order
-        fields = ['id','products','firstname', 'lastname', 'address', 'phonenumber']
+        fields = [
+            'id',
+            'products',
+            'firstname',
+            'lastname',
+            'address',
+            'phonenumber'
+        ]
         read_only_fields = ['id']
-    
+
     def create(self, validated_data):
         product_items = validated_data.pop('items')
         order_items = []
@@ -50,9 +61,6 @@ class OrderSerializer(ModelSerializer):
             ))
         OrderItem.objects.bulk_create(order_items)
         return order
-            
-
-
 
 
 def banners_list_api(request):
@@ -113,4 +121,7 @@ def register_order(request):
     serializer.is_valid(raise_exception=True)
     with transaction.atomic():
         order = serializer.save()
-    return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)
+    return Response(
+        OrderSerializer(order).data,
+        status=status.HTTP_201_CREATED
+        )

@@ -74,8 +74,11 @@ def view_products(request):
 
     products_with_restaurant_availability = []
     for product in products:
-        availability = {item.restaurant_id: item.availability for item in product.menu_items.all()}
-        ordered_availability = [availability.get(restaurant.id, False) for restaurant in restaurants]
+        availability = {item.restaurant_id: item.availability
+                        for item in product.menu_items.all()
+                        }
+        ordered_availability = [availability.get(restaurant.id, False)
+                                for restaurant in restaurants]
 
         products_with_restaurant_availability.append(
             (product, ordered_availability)
@@ -93,35 +96,10 @@ def view_restaurants(request):
         'restaurants': Restaurant.objects.all(),
     })
 
-def get_distance(point1,point2):
-    return distance.distance(point1,point2).km
-    
-def add_restoraunts_to_orders(orders):
-    api_key = settings.YANDEX_GEO_API_KEY
-    restaurant_menu_items = RestaurantMenuItem.objects.select_related('restaurant').filter(availability=True).values('restaurant_id','restaurant__name','product_id','restaurant__address')
-    for order in orders:
-        if order.status==Order.Status.ASSEMBLING:
-            order.message = f'Готовит {order.restaurant.name}'
-        elif order.status==Order.Status.DELIVERING:
-            order.message = f'Доставляет {order.restaurant.name}'
-        else:
-            restaurants_for_current_order = set((item['restaurant__name'],item['restaurant__address']) for item in restaurant_menu_items)
-            for order_item in order.items.all():
-                restauraunts_with_product = set((item['restaurant__name'],item['restaurant__address']) for item in restaurant_menu_items if item['product_id'] == order_item.product_id)
-                restaurants_for_current_order&=restauraunts_with_product
-            #TODO Ошибка геокодера
-            order_point = fetch_coordinates(api_key,order.address)
-            if order_point is None:
-                order.message ='Ошибка определения координат'
-                continue
-            restaurants_with_distances = []
-            for restaurant in restaurants_for_current_order:
-                restaurant_point = fetch_coordinates(api_key,restaurant[1])
-                if order_point and restaurant_point:
-                    restaurants_with_distances.append({'name':restaurant[0],'distance': get_distance(order_point,restaurant_point)})         
-            order.restaurants = sorted(restaurants_with_distances,key=lambda x : x['distance'])
-            order.message = 'Может быть доставлен следующими ресторанами:'
-    return orders
+
+def get_distance(point1, point2):
+    return distance.distance(point1, point2).km
+
 
 def fetch_coordinates_api(apikey, address):
     base_url = "https://geocode-maps.yandex.ru/1.x"
@@ -140,26 +118,32 @@ def fetch_coordinates_api(apikey, address):
     lon, lat = most_relevant['GeoObject']['Point']['pos'].split(" ")
     return lat, lon
 
-def find_restaurants_for_order(order,restaurant_menu_items):
-    Restaurant_tuple = namedtuple('Restaurant_tuple' , ['name','address'])
+
+def find_restaurants_for_order(order, restaurant_menu_items):
+    Restaurant_tuple = namedtuple('Restaurant_tuple', ['name', 'address'])
     restaurants_for_current_order = set(
-        Restaurant_tuple(item['restaurant__name'],item['restaurant__address']) for item in restaurant_menu_items
+        Restaurant_tuple(item['restaurant__name'], item['restaurant__address'])
+        for item in restaurant_menu_items
     )
     for order_item in order.items.all():
         restauraunts_with_product = set(
-            Restaurant_tuple(item['restaurant__name'],item['restaurant__address']) 
-            for item in restaurant_menu_items 
+            Restaurant_tuple(
+                item['restaurant__name'],
+                item['restaurant__address']
+                )
+            for item in restaurant_menu_items
             if item['product_id'] == order_item.product_id
             )
-        restaurants_for_current_order&=restauraunts_with_product
+        restaurants_for_current_order &= restauraunts_with_product
     return restaurants_for_current_order
+
 
 def fetch_coords(locations, address, api_key):
     if address in locations:
         if locations[address]['correct_address']:
             lat = locations[address]['latitude']
             lon = locations[address]['longitude']
-            return lat,lon
+            return lat, lon
         else:
             return None
     else:
@@ -170,42 +154,50 @@ def fetch_coords(locations, address, api_key):
         if coords is None:
             Location.objects.get_or_create(
                 correct_address=False,
-                defaults={'address':address}
+                defaults={'address': address}
             )
             return None
-        lat,lon  = coords
+        lat, lon = coords
         Location.objects.get_or_create(
             latitude=lat,
             longitude=lon,
-            defaults={'address':address}
+            defaults={'address': address}
         )
-        return lat,lon
+        return lat, lon
 
-
-
-     
 
 @user_passes_test(is_manager, login_url='restaurateur:login')
 def view_orders(request):
     api_key = settings.YANDEX_GEO_API_KEY
-    orders = Order.objects.exclude(status=Order.Status.DONE).annotate_with_total_cost()
+    orders = Order.objects.exclude(status=Order.Status.DONE).\
+        annotate_with_total_cost()
     restaurant_menu_items = RestaurantMenuItem.objects.\
         select_related('restaurant').\
         filter(availability=True).\
-        values('restaurant_id','restaurant__name','product_id','restaurant__address')
-    
+        values('restaurant_id',
+               'restaurant__name',
+               'product_id',
+               'restaurant__address'
+               )
+
     orders_addresses = set(order.address for order in orders)
-    restaurants_addresses = set(restaurant['restaurant__address']for restaurant in restaurant_menu_items)
-    locations = Location.objects.filter(address__in=orders_addresses|restaurants_addresses).values()
-    locations = {location['address']:location for location in locations}
+    restaurants_addresses = set(restaurant['restaurant__address']
+                                for restaurant in restaurant_menu_items)
+    locations = Location.objects.\
+        filter(address__in=orders_addresses | restaurants_addresses).\
+        values()
+    locations = {location['address']: location for location in locations}
 
     for order in orders:
-        if order.status==Order.Status.ASSEMBLING:
+        if order.status == Order.Status.ASSEMBLING:
             order.message = f'Готовит {order.restaurant.name}'
-        elif order.status==Order.Status.DELIVERING:
+        elif order.status == Order.Status.DELIVERING:
             order.message = f'Доставляет {order.restaurant.name}'
         else:
-            restaurants_for_current_order = find_restaurants_for_order(order,restaurant_menu_items)
+            restaurants_for_current_order = find_restaurants_for_order(
+                order,
+                restaurant_menu_items
+                )
             if restaurants_for_current_order:
                 order_point = fetch_coords(locations, order.address, api_key)
                 if order_point is None:
@@ -213,15 +205,38 @@ def view_orders(request):
                     continue
                 restaurants_with_distances = []
                 for restaurant in restaurants_for_current_order:
-                    restaurant_point = fetch_coords(locations, restaurant.address, api_key)
+                    restaurant_point = fetch_coords(
+                        locations,
+                        restaurant.address,
+                        api_key
+                        )
                     if restaurant_point is None:
-                        restaurants_with_distances.append({'name':restaurant.name,'distance': 'Ошибка в адресе ресторана'}) 
+                        restaurants_with_distances.append(
+                            {
+                                'name': restaurant.name,
+                                'distance': 'Ошибка в адресе ресторана'
+                            }
+                        )
                     else:
-                        restaurants_with_distances.append({'name':restaurant.name,'distance': get_distance(order_point,restaurant_point)})         
-                order.restaurants = sorted(restaurants_with_distances,key=lambda x : x['distance'])
+                        restaurants_with_distances.append(
+                            {
+                                'name': restaurant.name,
+                                'distance': get_distance(
+                                    order_point,
+                                    restaurant_point
+                                    )
+                            }
+                        )   
+                order.restaurants = sorted(
+                    restaurants_with_distances,
+                    key=lambda x: x['distance'])
                 order.message = 'Может быть доставлен следующими ресторанами:'
             else:
                 order.message = 'Ни один ресторан не может выполнить заказ'
-    return render(request, template_name='order_items.html', context={
-        'orders':orders
-    })
+    return render(
+        request,
+        template_name='order_items.html',
+        context={
+            'orders': orders
+        }
+    )

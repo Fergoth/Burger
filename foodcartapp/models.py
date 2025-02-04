@@ -5,7 +5,7 @@ from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 
 from phonenumber_field.modelfields import PhoneNumberField
-    
+ 
 
 class Restaurant(models.Model):
 
@@ -132,7 +132,10 @@ class RestaurantMenuItem(models.Model):
 class OrderQuerySet(models.QuerySet):
     def annotate_with_total_cost(self):
         orders = self.prefetch_related('items').all()
-        return orders.annotate(total_cost=Sum(F('items__quantity')*F('items__price')))
+        return orders.annotate(
+            total_cost=Sum(F('items__quantity')*F('items__price'))
+            )
+
 
 class Order(models.Model):
     class Status(models.IntegerChoices):
@@ -158,7 +161,7 @@ class Order(models.Model):
         max_length=30,
     )
     lastname = models.CharField(
-        'фамилия',  
+        'фамилия',
         max_length=30,
         blank=True
     )
@@ -210,10 +213,11 @@ class Order(models.Model):
     class Meta:
         verbose_name = 'заказ'
         verbose_name_plural = 'заказы'
-    
+
     def __str__(self):
         return f"{self.firstname} {self.lastname} {self.address}. {self.get_status_display()}"
-    
+
+
 class OrderItem(models.Model):
     order = models.ForeignKey(
         Order,
@@ -241,7 +245,6 @@ class OrderItem(models.Model):
     class Meta:
         verbose_name = 'элемент заказа'
         verbose_name_plural = 'элементы заказа'
-    
+
     def __str__(self):
         return f"{self.product} {self.order}"
-    # TODO индексы?
