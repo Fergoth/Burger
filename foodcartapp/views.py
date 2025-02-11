@@ -67,8 +67,8 @@ def register_order(request):
     serializer = OrderSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     with transaction.atomic():
-        order = serializer.save()
+        serializer.save()
     return Response(
-        OrderSerializer(order).data,
+        serializer.data,
         status=status.HTTP_201_CREATED
         )
