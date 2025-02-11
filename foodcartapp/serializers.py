@@ -18,7 +18,6 @@ class OrderItemSerializer(ModelSerializer):
             Product.objects.get(id=value)
         except Product.DoesNotExist:
             raise ValidationError(f'invalid product id {value}')
-        print(value)
         return value
 
 
