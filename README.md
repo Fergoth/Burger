@@ -58,6 +58,8 @@ pip install -r requirements.txt
 ```sh
 SECRET_KEY=django-insecure-0if40nf4nf93n4
 ```
+- `YANDEX_GEO_API_KEY` — [см. документацию по получению ключа](https://dvmn.org/encyclopedia/api-docs/yandex-geocoder-api/)
+- `ROLLBAR_TOKEN` - [см. документацию получения токена](https://app.rollbar.com/)
 
 Создайте файл базы данных SQLite и отмигрируйте её следующей командой:
 
@@ -148,6 +150,8 @@ Parcel будет следить за файлами в каталоге `bundle
 - `SECRET_KEY` — секретный ключ проекта. Он отвечает за шифрование на сайте. Например, им зашифрованы все пароли на вашем сайте.
 - `ALLOWED_HOSTS` — [см. документацию Django](https://docs.djangoproject.com/en/3.1/ref/settings/#allowed-hosts)
 - `YANDEX_GEO_API_KEY` — [см. документацию по получению ключа](https://dvmn.org/encyclopedia/api-docs/yandex-geocoder-api/)
+- `ROLLBAR_TOKEN` - [см. документацию получения токена](https://app.rollbar.com/)
+- `ROLLBAR_ENVIROMENT` - Настройка environment в Rollbar задаёт название окружения или инсталляции сайта. Для prod можно установить 'production'
 
 ## Цели проекта
 
