@@ -61,7 +61,14 @@ SECRET_KEY=django-insecure-0if40nf4nf93n4
 - `YANDEX_GEO_API_KEY` — [см. документацию по получению ключа](https://dvmn.org/encyclopedia/api-docs/yandex-geocoder-api/)
 - `ROLLBAR_TOKEN` - [см. документацию получения токена](https://app.rollbar.com/)
 
-Создайте файл базы данных SQLite и отмигрируйте её следующей командой:
+Установите Postgresql.
+Создайте БД и пользователя
+[Мануал для ubuntu](https://www.digitalocean.com/community/tutorials/how-to-use-postgresql-with-your-django-application-on-ubuntu-20-04)
+
+Установите переменную окружения 
+- `DATABASE_URL=postgresql://[Имя пользователя]:[пароль]@localhost/[Имя БД]`
+
+Отмигрируйте её следующей командой:
 
 ```sh
 python manage.py migrate
@@ -144,6 +151,10 @@ Parcel будет следить за файлами в каталоге `bundle
 ./node_modules/.bin/parcel build bundles-src/index.js --dist-dir bundles --public-url="./"
 ```
 
+Установите Postgresql.
+Создайте БД и пользователя
+[Мануал для ubuntu](https://www.digitalocean.com/community/tutorials/how-to-use-postgresql-with-your-django-application-on-ubuntu-20-04)
+
 Настроить бэкенд: создать файл `.env` в каталоге `star_burger/` со следующими настройками:
 
 - `DEBUG` — дебаг-режим. Поставьте `False`.
@@ -152,6 +163,7 @@ Parcel будет следить за файлами в каталоге `bundle
 - `YANDEX_GEO_API_KEY` — [см. документацию по получению ключа](https://dvmn.org/encyclopedia/api-docs/yandex-geocoder-api/)
 - `ROLLBAR_TOKEN` - [см. документацию получения токена](https://app.rollbar.com/)
 - `ROLLBAR_ENVIROMENT` - Настройка environment в Rollbar задаёт название окружения или инсталляции сайта. Для prod можно установить 'production'
+- `DATABASE_URL=postgresql://[Имя пользователя]:[пароль]@localhost/[Имя БД]`
 
 ## Цели проекта
 
