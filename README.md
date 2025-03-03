@@ -59,7 +59,7 @@ pip install -r requirements.txt
 SECRET_KEY=django-insecure-0if40nf4nf93n4
 ```
 - `YANDEX_GEO_API_KEY` — [см. документацию по получению ключа](https://dvmn.org/encyclopedia/api-docs/yandex-geocoder-api/)
-- `ROLLBAR_TOKEN` - [см. документацию получения токена](https://app.rollbar.com/)
+
 
 Установите Postgresql.
 Создайте БД и пользователя
